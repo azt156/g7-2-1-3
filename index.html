@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>細胞分裂：迷思概念測驗</title>
+    <!-- 引入 Tailwind CSS 以美化介面 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自訂字體 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f4f8;
+        }
+        /* 按鈕選擇時的樣式 */
+        .option-btn.selected {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: white;
+            border-color: #3b82f6; /* border-blue-600 */
+        }
+        /* 簡易的載入動畫 */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="w-full max-w-3xl bg-white rounded-xl shadow-2xl p-6 md:p-10 transition-all duration-500">
+        
+        <!-- 開始畫面 -->
+        <div id="start-container" class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-800">細胞的分裂：迷思概念測驗</h1>
+            <p class="mt-4 text-gray-600 max-w-xl mx-auto">本測驗將挑戰您對細胞的分裂科學概念的理解,點擊下方按鈕開始挑戰吧!</p>
+            <button id="start-btn" class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                開始測驗
+            </button>
+        </div>
+
+        <!-- 測驗區 -->
+        <div id="quiz-container" class="hidden">
+            <div class="mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-center text-blue-800">細胞分裂：迷思概念測驗</h1>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-4">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="progress-text" class="text-center text-gray-500 mt-2">第 1 / 10 題</p>
+            </div>
+
+            <div id="question-card" class="bg-blue-50 border-l-4 border-blue-500 p-5 rounded-lg mb-6">
+                <p id="question-text" class="text-lg md:text-xl font-semibold"></p>
+            </div>
+
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 選項按鈕會動態生成於此 -->
+            </div>
+
+            <div class="mt-8 text-center">
+                <button id="next-btn" class="w-full md:w-1/2 bg-gray-400 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300 cursor-not-allowed" disabled>
+                    下一題
+                </button>
+            </div>
+        </div>
+
+        <!-- 結果區 -->
+        <div id="results-container" class="hidden">
+            <h1 class="text-2xl md:text-3xl font-bold text-center text-green-700 mb-2">測驗完成！</h1>
+            <p class="text-center text-xl font-semibold mb-6">你的總分是：<span id="score" class="text-green-700"></span> / 100</p>
+            
+            <!-- 迷思概念統計 -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4 text-gray-700">迷思概念統計表</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="py-3 px-4 text-left font-semibold text-gray-600">迷思概念</th>
+                                <th class="py-3 px-4 text-center font-semibold text-gray-600">答錯題數</th>
+                            </tr>
+                        </thead>
+                        <tbody id="misconception-stats-body">
+                            <!-- 統計資料會動態生成於此 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 待加強概念文章 -->
+            <div id="misconception-article-container" class="mb-8 p-6 bg-yellow-50 border-l-4 border-yellow-500 rounded-lg">
+                <h2 class="text-xl font-bold mb-3 text-yellow-800">待加強概念解析</h2>
+                <h3 id="article-title" class="text-lg font-semibold mb-2"></h3>
+                <p id="article-content" class="text-gray-700 leading-relaxed"></p>
+            </div>
+            
+            <!-- 題目詳解 -->
+            <div id="detailed-explanations-container" class="mt-8">
+                <!-- 詳解內容會動態生成於此 -->
+            </div>
+
+            <!-- 操作按鈕 -->
+            <div class="flex flex-col md:flex-row gap-4 justify-center mt-8">
+                <button id="download-csv-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300">
+                    下載分數與作答紀錄 (CSV)
+                </button>
+                <button id="restart-btn" class="w-full md:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300">
+                    再測一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // =================================================================
+    // Client-side JavaScript
+    // =================================================================
+    
+    // 測驗資料
+    const QUIZ_QUESTIONS = [
+        {
+            question: "為什麼人體中的神經細胞受損後很難復原?",
+            options: [
+                { key: "A", value: "因為神經細胞不含有染色體" },
+                { key: "B", value: "因為神經細胞分裂速度非常慢,幾乎不分裂" },
+                { key: "C", value: "因為神經細胞太小,難以進行細胞分裂" },
+                { key: "D", value: "因為神經細胞的DNA無法複製" }
+            ],
+            answer: "B",
+            misconception: "細胞分裂能力",
+            explanation: "神經細胞是高度分化的細胞,一旦成熟後就幾乎不再進行分裂,因此受損後難以透過細胞分裂來修復."
+        },
+        {
+            question: "在細胞分裂過程中,染色體的主要功能是什麼?",
+            options: [
+                { key: "A", value: "產生能量供細胞分裂使用" },
+                { key: "B", value: "破壞舊的細胞結構" },
+                { key: "C", value: "保護DNA並協助複製和分配" },
+                { key: "D", value: "加速細胞分裂的進行" }
+            ],
+            answer: "C",
+            misconception: "染色體功能",
+            explanation: "染色體是由DNA和蛋白質緊密纏繞而成,主要功能是在細胞分裂時,確保遺傳物質能被準確地複製並平均分配到子細胞中."
+        },
+        {
+            question: "人類的精子和卵子各含有多少條染色體?",
+            options: [
+                { key: "A", value: "46條" },
+                { key: "B", value: "92條" },
+                { key: "C", value: "23條" },
+                { key: "D", value: "13條" }
+            ],
+            answer: "C",
+            misconception: "減數分裂",
+            explanation: "人類的體細胞含有46條染色體(23對). 為了維持後代染色體數目的恆定,精子和卵子(生殖細胞)需經過減數分裂,使染色體數目減半,成為23條."
+        },
+        {
+            question: "下列哪項不是減數分裂的特點?",
+            options: [
+                { key: "A", value: "產生基因組合不同的子細胞" },
+                { key: "B", value: "染色體數目減半" },
+                { key: "C", value: "產生的細胞與母細胞完全相同" },
+                { key: "D", value: "在生殖器官中發生" }
+            ],
+            answer: "C",
+            misconception: "減數分裂特性",
+            explanation: "減數分裂會發生同源染色體互換,產生基因組合不同的子細胞,這是遺傳多樣性的來源. 產生與母細胞完全相同的子細胞是細胞分裂(有絲分裂)的特點."
+        },
+        {
+            question: "如果配子的染色體數不減半,受精後會發生什麼情況?",
+            options: [
+                { key: "A", value: "新個體會變得更強壯" },
+                { key: "B", value: "新個體的智力會提高" },
+                { key: "C", value: "每一代染色體數就會翻倍,導致無法正常發育" },
+                { key: "D", value: "新個體的生長速度會變慢" }
+            ],
+            answer: "C",
+            misconception: "染色體數目恆定",
+            explanation: "減數分裂確保了每個物種的染色體數目在世代間保持穩定. 如果配子染色體數不減半,受精後染色體數目會加倍,導致嚴重的遺傳異常,通常無法正常發育."
+        },
+        {
+            question: "為什麼有性生殖的生物通常比無性生殖的生物更能適應環境變化?",
+            options: [
+                { key: "A", value: "有性生殖的生物體型通常更大" },
+                { key: "B", value: "有性生殖產生遺傳多樣性,提高適應環境變化的能力" },
+                { key: "C", value: "有性生殖的生物繁殖速度更快" },
+                { key: "D", value: "有性生殖的生物消耗能量更少" }
+            ],
+            answer: "B",
+            misconception: "有性生殖",
+            explanation: "有性生殖結合了來自兩個親代的遺傳物質,產生了具有新基因組合的後代,增加了族群的遺傳多樣性. 當環境改變時,多樣性越高的族群中,出現能適應新環境個體的機率就越大."
+        },
+        {
+            question: "下列哪一項是無性生殖的優點?",
+            options: [
+                { key: "A", value: "產生遺傳多樣性高的後代" },
+                { key: "B", value: "繁殖速度快,不需尋找配偶" },
+                { key: "C", value: "能產生新的基因組合" },
+                { key: "D", value: "增加適應環境變化的能力" }
+            ],
+            answer: "B",
+            misconception: "無性生殖",
+            explanation: "無性生殖不需要尋找配偶,且繁殖過程通常較為簡單快速,在穩定的環境中能迅速擴大族群數量. 但其缺點是後代基因與親代完全相同,缺乏變異."
+        },
+        {
+            question: "人體的皮膚和腸道細胞為什麼分裂速度很快?",
+            options: [
+                { key: "A", value: "因為這些細胞比其他細胞小" },
+                { key: "B", value: "因為這些細胞需要經常更新" },
+                { key: "C", value: "因為這些細胞含有更多的染色體" },
+                { key: "D", value: "因為這些細胞沒有細胞核" }
+            ],
+            answer: "B",
+            misconception: "細胞分裂速率",
+            explanation: "皮膚和腸道內壁的細胞處於身體與外界接觸的第一線,容易磨損和脫落,因此需要透過快速的細胞分裂來不斷更新和修復,維持組織的完整性."
+        },
+        {
+            question: "下列哪一項不是細胞分裂的功能?",
+            options: [
+                { key: "A", value: "幫助生物體生長" },
+                { key: "B", value: "修復受損的組織" },
+                { key: "C", value: "更換老舊的細胞" },
+                { key: "D", value: "製造能量供身體使用" }
+            ],
+            answer: "D",
+            misconception: "細胞分裂功能",
+            explanation: "細胞分裂主要負責生物體的生長(細胞數目增加),修復(如傷口癒合)和更新(如皮膚脫落). 製造能量是細胞呼吸作用的功能,主要在粒線體中進行."
+        },
+        {
+            question: "為什麼無性生殖的生物在環境突然變化時更容易滅絕?",
+            options: [
+                { key: "A", value: "因為無性生殖的生物體型通常較小" },
+                { key: "B", value: "因為無性生殖的生物壽命較短" },
+                { key: "C", value: "因為無性生殖的生物缺乏遺傳變異,難以適應環境變化" },
+                { key: "D", value: "因為無性生殖的生物繁殖速度較慢" }
+            ],
+            answer: "C",
+            misconception: "無性生殖",
+            explanation: "無性生殖產生的後代基因與親代幾乎完全相同,整個族群的遺傳背景非常相似. 當環境發生劇烈變化(如出現新的疾病或氣候改變)時,如果親代無法適應,那麼所有後代可能都無法適應,導致整個族群面臨滅絕的風險."
+        }
+    ];
+
+    // DOM 元素
+    const startContainer = document.getElementById('start-container');
+    const quizContainer = document.getElementById('quiz-container');
+    const resultsContainer = document.getElementById('results-container');
+    const startBtn = document.getElementById('start-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const downloadCsvBtn = document.getElementById('download-csv-btn');
+
+    // 測驗狀態變數
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+    let processedResults = {};
+
+    /**
+     * 初始化測驗
+     */
+    function initQuiz() {
+        startContainer.classList.add('hidden');
+        resultsContainer.classList.add('hidden');
+        quizContainer.classList.remove('hidden');
+        
+        currentQuestionIndex = 0;
+        userAnswers = [];
+        processedResults = {};
+        
+        displayQuestion();
+    }
+
+    /**
+     * 顯示目前的問題及選項
+     */
+    function displayQuestion() {
+        const question = QUIZ_QUESTIONS[currentQuestionIndex];
+        const progressPercentage = ((currentQuestionIndex) / QUIZ_QUESTIONS.length) * 100;
+        
+        document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+        document.getElementById('progress-text').textContent = `第 ${currentQuestionIndex + 1} / ${QUIZ_QUESTIONS.length} 題`;
+        document.getElementById('question-text').textContent = question.question;
+
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = ''; // 清空舊選項
+
+        question.options.forEach(option => {
+            const button = document.createElement('button');
+            button.innerHTML = `${option.key}. ${option.value}`;
+            button.classList.add('option-btn', 'w-full', 'p-4', 'border-2', 'border-gray-300', 'rounded-lg', 'text-left', 'transition-colors', 'duration-200', 'hover:bg-blue-100', 'hover:border-blue-400');
+            button.dataset.key = option.key;
+            button.onclick = () => selectAnswer(button, option.key);
+            optionsContainer.appendChild(button);
+        });
+
+        // 重置下一題按鈕
+        nextBtn.disabled = true;
+        nextBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+        nextBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        nextBtn.textContent = (currentQuestionIndex === QUIZ_QUESTIONS.length - 1) ? '查看結果' : '下一題';
+    }
+
+    /**
+     * 處理使用者選擇的答案
+     * @param {HTMLElement} selectedButton - 被點擊的按鈕元素
+     * @param {string} selectedKey - 被選擇的答案選項 (A, B, C, D)
+     */
+    function selectAnswer(selectedButton, selectedKey) {
+        document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+        selectedButton.classList.add('selected');
+        userAnswers[currentQuestionIndex] = selectedKey;
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        nextBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+    }
+
+    /**
+     * 前往下一題或顯示結果
+     */
+    function goToNextQuestion() {
+        if (userAnswers[currentQuestionIndex] === undefined) return;
+
+        currentQuestionIndex++;
+        if (currentQuestionIndex < QUIZ_QUESTIONS.length) {
+            displayQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    /**
+     * 顯示結果頁面
+     */
+    function showResults() {
+        quizContainer.classList.add('hidden');
+        resultsContainer.classList.remove('hidden');
+        
+        processAndDisplayResults();
+    }
+
+    /**
+     * 計算並顯示結果
+     */
+    function processAndDisplayResults() {
+        let score = 0;
+        const detailedResults = [];
+        const misconceptionStats = {};
+        
+        QUIZ_QUESTIONS.forEach(q => {
+            if (!misconceptionStats[q.misconception]) {
+                misconceptionStats[q.misconception] = 0;
+            }
+        });
+
+        userAnswers.forEach((answer, index) => {
+            const question = QUIZ_QUESTIONS[index];
+            const isCorrect = (answer === question.answer);
+            
+            if (isCorrect) {
+                score += 10;
+            } else {
+                misconceptionStats[question.misconception]++;
+            }
+            
+            detailedResults.push({
+                question: question.question,
+                userAnswer: answer || "未作答",
+                correctAnswer: question.answer,
+                isCorrect: isCorrect,
+                explanation: question.explanation // 加入解析
+            });
+        });
+
+        // 找出答錯最多次的迷思概念
+        let topMisconception = null;
+        let maxErrors = 0;
+        Object.keys(misconceptionStats).forEach(concept => {
+            if (misconceptionStats[concept] > maxErrors) {
+                maxErrors = misconceptionStats[concept];
+            }
+        });
+
+        if (maxErrors > 0) {
+            const topConceptName = Object.keys(misconceptionStats).find(key => misconceptionStats[key] === maxErrors);
+            const questionForExplanation = QUIZ_QUESTIONS.find(q => q.misconception === topConceptName);
+            topMisconception = {
+                concept: topConceptName,
+                explanation: questionForExplanation.explanation
+            };
+        }
+        
+        processedResults = { score, detailedResults, misconceptionStats, topMisconception };
+
+        // 更新 UI
+        document.getElementById('score').textContent = score;
+
+        const statsBody = document.getElementById('misconception-stats-body');
+        statsBody.innerHTML = '';
+        Object.entries(misconceptionStats).forEach(([concept, count]) => {
+            const row = document.createElement('tr');
+            row.classList.add('border-t');
+            row.innerHTML = `
+                <td class="py-3 px-4">${concept}</td>
+                <td class="py-3 px-4 text-center font-medium text-red-600">${count}</td>
+            `;
+            statsBody.appendChild(row);
+        });
+
+        if (topMisconception) {
+            document.getElementById('article-title').textContent = topMisconception.concept;
+            document.getElementById('article-content').textContent = topMisconception.explanation;
+            document.getElementById('misconception-article-container').classList.remove('hidden');
+        } else {
+            document.getElementById('article-title').textContent = "恭喜你！";
+            document.getElementById('article-content').textContent = "你沒有任何迷思概念,所有題目都答對了！繼續保持！";
+            document.getElementById('misconception-article-container').classList.remove('hidden');
+        }
+        
+        // **新增**：顯示所有題目詳解
+        const explanationsContainer = document.getElementById('detailed-explanations-container');
+        explanationsContainer.innerHTML = '<h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">題目詳解</h2>';
+        
+        processedResults.detailedResults.forEach((result, index) => {
+            const card = document.createElement('div');
+            card.classList.add('p-4', 'mb-4', 'border', 'rounded-lg');
+            card.classList.add(result.isCorrect ? 'bg-green-50' : 'bg-red-50', result.isCorrect ? 'border-green-200' : 'border-red-200');
+
+            const questionData = QUIZ_QUESTIONS[index];
+            const userAnswerText = questionData.options.find(o => o.key === result.userAnswer)?.value || '未作答';
+            const correctAnswerText = questionData.options.find(o => o.key === result.correctAnswer).value;
+
+            card.innerHTML = `
+                <p class="font-semibold mb-2">${index + 1}. ${result.question}</p>
+                <p class="text-sm text-gray-600">你的答案：<span class="font-bold ${result.isCorrect ? 'text-green-700' : 'text-red-700'}">${result.userAnswer}. ${userAnswerText} ${result.isCorrect ? '<span class="text-green-700">✓</span>' : '<span class="text-red-700">✗</span>'}</span></p>
+                ${!result.isCorrect ? `<p class="text-sm text-gray-600">正確答案：<span class="font-bold text-green-700">${result.correctAnswer}. ${correctAnswerText}</span></p>` : ''}
+                <p class="mt-3 pt-3 border-t ${result.isCorrect ? 'border-green-200' : 'border-red-200'} text-sm text-gray-800"><strong class="text-blue-700">解析：</strong>${result.explanation}</p>
+            `;
+            explanationsContainer.appendChild(card);
+        });
+    }
+    
+    /**
+     * 產生並下載 CSV 檔案
+     */
+    function downloadCSV() {
+        if (!processedResults.detailedResults) return;
+
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF for BOM to support UTF-8 in Excel
+        csvContent += "題號,題目,你的答案,正確答案,結果\n";
+
+        processedResults.detailedResults.forEach((result, index) => {
+            const questionText = `"${result.question.replace(/"/g, '""')}"`;
+            const row = [index + 1, questionText, result.userAnswer, result.correctAnswer, result.isCorrect ? "答對" : "答錯"].join(',');
+            csvContent += row + "\n";
+        });
+
+        csvContent += "\n";
+        csvContent += `總分,,${processedResults.score},/ 100\n`;
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "細胞分裂迷思概念測驗結果.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // 綁定事件監聽器
+    startBtn.addEventListener('click', initQuiz);
+    nextBtn.addEventListener('click', goToNextQuestion);
+    restartBtn.addEventListener('click', () => {
+        resultsContainer.classList.add('hidden');
+        startContainer.classList.remove('hidden');
+    });
+    downloadCsvBtn.addEventListener('click', downloadCSV);
+
+</script>
+</body>
+</html>
